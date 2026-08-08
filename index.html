@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<title>EFCA — Escala de Fenótipo de Comportamento Alimentar</title>
+<style>
+  :root{
+    --bg: #F3F5F3;
+    --card: #FFFFFF;
+    --ink: #202B27;
+    --ink-soft: #5B6A63;
+    --teal: #2F6F62;
+    --teal-dark: #1F4B41;
+    --clay: #C97B63;
+    --line: #DEE4E0;
+    --radius: 14px;
+    --serif: "Newsreader", Georgia, serif;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  }
+  @font-face{ font-family:"Newsreader"; src:local("Georgia"); }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:var(--bg); color:var(--ink); font-family:var(--sans); }
+  body{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .app{ width:100%; max-width:620px; }
+
+ 
+  .progress-row{
+    display:flex; align-items:center; gap:10px; margin-bottom:22px;
+  }
+  .progress-track{
+    flex:1; height:4px; background:var(--line); border-radius:4px; overflow:hidden;
+  }
+  .progress-fill{
+    height:100%; background:var(--teal); width:0%;
+    transition:width .4s cubic-bezier(.4,0,.2,1);
+  }
+  .progress-label{
+    font-family:var(--mono); font-size:12px; color:var(--ink-soft); white-space:nowrap;
+  }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:40px 36px;
+    box-shadow:0 1px 2px rgba(32,43,39,.04);
+  }
+
+
+  .eyebrow{
+    font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--teal); margin-bottom:14px; display:block;
+  }
+  h1{
+    font-family:var(--serif); font-weight:500; font-size:32px; line-height:1.15;
+    margin:0 0 16px 0; color:var(--ink);
+  }
+  p.lead{
+    font-size:15.5px; line-height:1.65; color:var(--ink-soft); margin:0 0 14px 0;
+  }
+  .notice{
+    margin-top:22px; padding:14px 16px; background:#F4EFE9; border:1px solid #E7DCCF;
+    border-radius:10px; font-size:13px; line-height:1.55; color:#6B5B45;
+  }
+  .btn{
+    appearance:none; border:none; cursor:pointer;
+    font-family:var(--sans); font-size:15px; font-weight:600;
+    padding:13px 26px; border-radius:9px;
+    background:var(--teal); color:#fff;
+    transition:background .15s ease, transform .1s ease;
+  }
+  .btn:hover{ background:var(--teal-dark); }
+  .btn:active{ transform:scale(.98); }
+  .btn:focus-visible{ outline:2px solid var(--clay); outline-offset:2px; }
+  .btn.secondary{
+    background:transparent; color:var(--teal); border:1px solid var(--teal);
+  }
+  .btn.secondary:hover{ background:#EAF1EF; }
+  .btn-row{ display:flex; gap:12px; margin-top:28px; }
+  .btn-row.spread{ justify-content:space-between; }
+  .btn[disabled]{ opacity:.4; cursor:not-allowed; }
+
+  .field-group{ margin-bottom:20px; }
+  .field-label{
+    font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-soft); margin-bottom:8px; display:block;
+  }
+  .text-input{
+    width:100%; font-family:var(--sans); font-size:16px;
+    padding:13px 14px; border:1px solid var(--line); border-radius:9px;
+    background:#fff; color:var(--ink); transition:border-color .15s;
+  }
+  .text-input:focus{ outline:none; border-color:var(--teal); }
+  .field-error{
+    font-size:13px; color:#B0562F; margin-top:8px; min-height:18px;
+  }
+  .result-patient{
+    font-family:var(--sans); font-size:16px; color:var(--ink-soft); margin:0 0 4px 0;
+  }
+  .result-meta{
+    font-family:var(--mono); font-size:16px; color:var(--ink-soft); margin:0 0 4px 0;
+  }
+  .gender-group{ display:flex; gap:10px; }
+  .gender-option{
+    flex:1; display:flex; align-items:center; justify-content:center; gap:8px;
+    padding:12px; border:1px solid var(--line); border-radius:10px; cursor:pointer;
+    font-size:14.5px; transition:border-color .15s, background .15s;
+  }
+  .gender-option:hover{ border-color:var(--teal); background:#F7FAF9; }
+  .gender-option input{ accent-color:var(--teal); }
+  .gender-option.selected{ border-color:var(--teal); background:#EAF1EF; }
+
+ 
+  .domain-tag{
+    font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-soft); margin-bottom:10px; display:block;
+  }
+  .question-text{
+    font-family:var(--serif); font-size:22px; line-height:1.4; font-weight:500;
+    margin:0 0 28px 0;
+  }
+  .likert{ display:flex; flex-direction:column; gap:8px; }
+  .likert-option{
+    display:flex; align-items:center; gap:14px;
+    padding:13px 16px; border:1px solid var(--line); border-radius:10px;
+    cursor:pointer; transition:border-color .15s, background .15s;
+    font-size:14.5px;
+  }
+  .likert-option:hover{ border-color:var(--teal); background:#F7FAF9; }
+  .likert-option input{ accent-color:var(--teal); width:17px; height:17px; flex-shrink:0; }
+  .likert-option.selected{ border-color:var(--teal); background:#EAF1EF; }
+  .likert-scale-caption{
+    display:flex; justify-content:space-between; font-family:var(--mono); font-size:11px;
+    color:var(--ink-soft); margin-top:8px; padding:0 2px;
+  }
+
+ 
+  .result-header{ text-align:center; margin-bottom:8px; }
+  .petal-wrap{ display:flex; justify-content:center; margin:20px 0 8px; }
+  .petal-wrap svg{ max-width:100%; height:auto; display:block; }
+  .domain-list{ margin-top:22px; display:flex; flex-direction:column; gap:14px; }
+  .domain-row{ display:flex; align-items:center; gap:14px; }
+  .domain-name{ width:110px; font-size:13px; color:var(--ink-soft); flex-shrink:0; }
+  .domain-bar-track{ flex:1; height:8px; background:var(--line); border-radius:8px; overflow:hidden; }
+  .domain-bar-fill{ height:100%; background:var(--teal); border-radius:8px; }
+  .domain-score{ font-family:var(--mono); font-size:12.5px; width:44px; text-align:right; color:var(--ink); }
+
+  .sr-only{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .progress-fill{ transition:none; }
+  }
+  @media (max-width:480px){
+    .card{ padding:28px 22px; }
+    h1{ font-size:26px; }
+    .question-text{ font-size:19px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="progress-row" id="progressRow" style="display:none;">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-label" id="progressLabel">0 / 16</span>
+  </div>
+
+  <div class="card" id="card"></div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+
+const API_BASE_URL = "https://efca-api.onrender.com";
+
+const DOMAINS = {
+  HEDONICO:      { label: "Hedônico",      color: "#0072B2" },
+  HIPERFAGICO:   { label: "Hiperfágico",   color: "#009E73" },
+  EMOCIONAL:     { label: "Emocional",     color: "#E69F00" },
+  COMPULSIVO:    { label: "Compulsivo",    color: "#D55E00" },
+  DESORGANIZADO: { label: "Desorganizado", color: "#CC79A7" },
+};
+
+let QUESTIONS = []; 
+const LIKERT_LABELS = [
+  "Nunca",
+  "Raramente",
+  "Às vezes",
+  "Frequentemente",
+  "Sempre",
+];
+
+let current = -1; 
+let answers = {}; 
+let patientName = ""; // NUNCA enviar isso para a API — uso 100% local no navegador
+let patientAge = null;    // anos (número) — local apenas
+let patientGender = "";   // "M" ou "F" — local apenas
+let patientHeight = null; // centímetros (número) — local apenas
+let patientWeight = null; // kg (número) — local apenas
+
+const card = document.getElementById("card");
+const progressRow = document.getElementById("progressRow");
+const progressFill = document.getElementById("progressFill");
+const progressLabel = document.getElementById("progressLabel");
+
+function updateProgress(){
+  const answered = Object.keys(answers).length;
+  const pct = Math.round((answered / QUESTIONS.length) * 100);
+  progressFill.style.width = pct + "%";
+  progressLabel.textContent = `${answered} / ${QUESTIONS.length}`;
+}
+
+function escapeHTML(str){
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function renderIntro(){
+  progressRow.style.display = "none";
+  card.innerHTML = `
+    <span class="eyebrow">EFCA · Autoavaliação</span>
+    <h1>Fenótipo de Comportamento Alimentar</h1>
+    <p class="lead">Este questionário reúne afirmações sobre como você se relaciona com a comida. Não existem respostas certas ou erradas — responda pensando no seu padrão habitual, não em um dia específico.</p>
+    <p class="lead">Leva cerca de 3 minutos.</p>
+    <div class="notice">
+      Este questionário é uma ferramenta de triagem comportamental, não um diagnóstico. Ele não substitui avaliação de um(a) nutricionista, endocrinologista ou psicólogo(a). Os itens exibidos aqui são um protótipo de exemplo — antes de usar com pacientes reais, substitua pelo texto oficial e licenciado da escala validada.
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="startBtn">Começar</button>
+    </div>
+  `;
+  document.getElementById("startBtn").addEventListener("click", renderPatientName);
+}
+
+function sanitizeFilename(name){
+  return name
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove acentos
+    .replace(/[^a-zA-Z0-9 _-]/g, "") // remove qualquer coisa que não seja letra/número/espaço/traço
+    .trim()
+    .replace(/\s+/g, "_")
+    .slice(0, 80) || "paciente";
+}
+
+function parseDecimalBR(str){
+  if(!str) return NaN;
+  return parseFloat(str.trim().replace(",", "."));
+}
+
+function formatDecimalBR(num, decimals){
+  return num.toFixed(decimals).replace(".", ",");
+}
+
+function formatHeightCm(num){
+  return Number.isInteger(num) ? String(num) : formatDecimalBR(num, 1);
+}
+
+function renderPatientName(){
+  progressRow.style.display = "none";
+  const ageStr = patientAge !== null ? String(patientAge) : "";
+  card.innerHTML = `
+    <span class="eyebrow">EFCA · Autoavaliação</span>
+    <h1 style="font-size:26px;">Nome do(a) paciente</h1>
+    <p class="lead">Usado apenas para identificar o resultado exportado ao final. Este dado fica só neste navegador — não é enviado a nenhum servidor.</p>
+    <div class="field-group">
+      <span class="field-label">Nome completo</span>
+      <input type="text" class="text-input" id="patientNameInput" placeholder="Nome completo" value="${escapeHTML(patientName)}" autocomplete="off" maxlength="120">
+    </div>
+    <div class="field-group">
+      <span class="field-label">Idade</span>
+      <input type="text" inputmode="numeric" class="text-input" id="patientAgeInput" placeholder="Ex: 34" value="${escapeHTML(ageStr)}" maxlength="3">
+    </div>
+    <div class="field-error" id="patientNameError"></div>
+    <div class="btn-row">
+      <button class="btn secondary" id="backToIntroBtn">Voltar</button>
+      <button class="btn" id="continueBtn">Continuar</button>
+    </div>
+  `;
+
+  const input = document.getElementById("patientNameInput");
+  const ageInput = document.getElementById("patientAgeInput");
+  const errorEl = document.getElementById("patientNameError");
+  input.focus();
+
+  document.getElementById("backToIntroBtn").addEventListener("click", renderIntro);
+
+  function tryContinue(){
+    const value = input.value.trim();
+    const ageVal = parseInt(ageInput.value.trim(), 10);
+
+    if (!value){
+      errorEl.textContent = "Preencha o nome do(a) paciente para continuar.";
+      input.focus();
+      return;
+    }
+    if (!Number.isFinite(ageVal) || ageVal < 1 || ageVal > 120){
+      errorEl.textContent = "Informe uma idade válida (1–120).";
+      ageInput.focus();
+      return;
+    }
+    patientName = value;
+    patientAge = ageVal;
+    renderPatientDetails();
+  }
+
+  document.getElementById("continueBtn").addEventListener("click", tryContinue);
+  [input, ageInput].forEach(el => el.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") tryContinue();
+  }));
+}
+
+function renderPatientDetails(){
+  progressRow.style.display = "none";
+  const heightStr = patientHeight !== null ? formatHeightCm(patientHeight) : "";
+  const weightStr = patientWeight !== null ? formatDecimalBR(patientWeight, 1) : "";
+
+  card.innerHTML = `
+    <span class="eyebrow">EFCA · Autoavaliação</span>
+    <h1 style="font-size:26px;">Dados do(a) paciente</h1>
+    <p class="lead">Também usados apenas para o resultado exportado. Não são enviados a nenhum servidor.</p>
+
+    <div class="field-group">
+      <span class="field-label">Gênero</span>
+      <div class="gender-group" role="radiogroup" aria-label="Gênero">
+        <label class="gender-option${patientGender === "M" ? " selected" : ""}">
+          <input type="radio" name="gender" value="M" ${patientGender === "M" ? "checked" : ""}>
+          <span>Masculino</span>
+        </label>
+        <label class="gender-option${patientGender === "F" ? " selected" : ""}">
+          <input type="radio" name="gender" value="F" ${patientGender === "F" ? "checked" : ""}>
+          <span>Feminino</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <span class="field-label">Altura (cm)</span>
+      <input type="text" inputmode="decimal" class="text-input" id="heightInput" placeholder="Ex: 175" value="${escapeHTML(heightStr)}" maxlength="5">
+    </div>
+
+    <div class="field-group">
+      <span class="field-label">Peso (kg)</span>
+      <input type="text" inputmode="decimal" class="text-input" id="weightInput" placeholder="Ex: 72,5" value="${escapeHTML(weightStr)}" maxlength="6">
+    </div>
+
+    <div class="field-error" id="detailsError"></div>
+
+    <div class="btn-row">
+      <button class="btn secondary" id="backToNameBtn">Voltar</button>
+      <button class="btn" id="detailsContinueBtn">Continuar</button>
+    </div>
+  `;
+
+  document.getElementById("backToNameBtn").addEventListener("click", renderPatientName);
+
+  card.querySelectorAll('input[name="gender"]').forEach(input => {
+    input.addEventListener("change", (e) => {
+      patientGender = e.target.value;
+      renderPatientDetails();
+    });
+  });
+
+  const errorEl = document.getElementById("detailsError");
+
+  document.getElementById("detailsContinueBtn").addEventListener("click", () => {
+    const heightVal = parseDecimalBR(document.getElementById("heightInput").value);
+    const weightVal = parseDecimalBR(document.getElementById("weightInput").value);
+
+    if (!patientGender){
+      errorEl.textContent = "Selecione o gênero para continuar.";
+      return;
+    }
+    if (!Number.isFinite(heightVal) || heightVal < 50 || heightVal > 250){
+      errorEl.textContent = "Informe uma altura válida em centímetros (ex: 175).";
+      return;
+    }
+    if (!Number.isFinite(weightVal) || weightVal < 20 || weightVal > 400){
+      errorEl.textContent = "Informe um peso válido em kg (ex: 72,5).";
+      return;
+    }
+
+    patientHeight = heightVal;
+    patientWeight = weightVal;
+    startQuiz();
+  });
+}
+
+async function startQuiz(){
+  card.innerHTML = `<p class="lead">Carregando perguntas…</p>`;
+  try{
+    const res = await fetch(`${API_BASE_URL}/api/questions`);
+    if(!res.ok) throw new Error(`API respondeu ${res.status}`);
+    QUESTIONS = await res.json();
+    current = 0;
+    renderQuestion();
+  }catch(err){
+    card.innerHTML = `
+      <span class="eyebrow" style="color:#B0562F;">Erro</span>
+      <h1 style="font-size:24px;">Não foi possível carregar o questionário</h1>
+      <p class="lead">Confira se a API (${API_BASE_URL}) está no ar e se a origem deste front-end está liberada em EFCA_ALLOWED_ORIGINS.</p>
+      <div class="btn-row"><button class="btn" id="retryBtn">Tentar de novo</button></div>
+    `;
+    document.getElementById("retryBtn").addEventListener("click", startQuiz);
+  }
+}
+
+function renderQuestion(){
+  progressRow.style.display = "flex";
+  updateProgress();
+  const q = QUESTIONS[current];
+  const domain = DOMAINS[q.domain];
+  const selected = answers[q.id];
+
+  card.innerHTML = `
+    <span class="domain-tag" style="color:${domain.color}">${domain.label}</span>
+    <p class="question-text">${escapeHTML(q.text)}</p>
+    <div class="likert" role="radiogroup" aria-label="${escapeHTML(q.text)}">
+      ${LIKERT_LABELS.map((label, i) => {
+        const val = i + 1;
+        const isSelected = selected === val;
+        return `
+          <label class="likert-option${isSelected ? " selected" : ""}">
+            <input type="radio" name="${escapeHTML(q.id)}" value="${val}" ${isSelected ? "checked" : ""}>
+            <span>${val} — ${label}</span>
+          </label>
+        `;
+      }).join("")}
+    </div>
+    <div class="btn-row">
+      <button class="btn secondary" id="backBtn">Voltar</button>
+      <button class="btn" id="nextBtn" ${selected ? "" : "disabled"}>${current === QUESTIONS.length - 1 ? "Ver resultado" : "Próxima"}</button>
+    </div>
+  `;
+
+  card.querySelectorAll(`input[name="${q.id}"]`).forEach(input => {
+    input.addEventListener("change", (e) => {
+      answers[q.id] = parseInt(e.target.value, 10);
+      renderQuestion(); 
+    });
+  });
+
+  document.getElementById("backBtn").addEventListener("click", () => {
+    if (current > 0) { current--; renderQuestion(); }
+    else { renderPatientDetails(); }
+  });
+  document.getElementById("nextBtn").addEventListener("click", () => {
+    if (!answers[q.id]) return;
+    if (current < QUESTIONS.length - 1) {
+      current++;
+      renderQuestion();
+    } else {
+      renderResults();
+    }
+  });
+}
+
+async function renderResults(){
+  progressRow.style.display = "none";
+  card.innerHTML = `<p class="lead">Calculando resultado…</p>`;
+
+  let domains;
+  try{
+    const res = await fetch(`${API_BASE_URL}/api/responses`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answers }),
+    });
+    if(!res.ok){
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.details ? body.details.join("; ") : `API respondeu ${res.status}`);
+    }
+    const data = await res.json();
+    domains = data.domains; 
+  }catch(err){
+    card.innerHTML = `
+      <span class="eyebrow" style="color:#B0562F;">Erro</span>
+      <h1 style="font-size:24px;">Não foi possível calcular o resultado</h1>
+      <p class="lead">${escapeHTML(err.message)}</p>
+      <div class="btn-row"><button class="btn" id="retryResultsBtn">Tentar de novo</button></div>
+    `;
+    document.getElementById("retryResultsBtn").addEventListener("click", renderResults);
+    return;
+  }
+
+  const scores = {};
+  domains.forEach(d => { scores[d.domain] = { avg: d.average, sum: d.sum, max: d.maxPossible }; });
+
+  const domainRows = domains.map(d => {
+    const meta = DOMAINS[d.domain];
+    const pct = Math.round((d.average / 5) * 100);
+    return `
+      <div class="domain-row">
+        <span class="domain-name">${d.domainLabel}</span>
+        <div class="domain-bar-track">
+          <div class="domain-bar-fill" style="width:${pct}%; background:${meta.color};"></div>
+        </div>
+        <span class="domain-score">${d.average.toFixed(1)}/5</span>
+      </div>
+    `;
+  }).join("");
+
+  const genderLabel = patientGender === "M" ? "Masculino" : patientGender === "F" ? "Feminino" : "";
+  const metaParts = [
+    patientAge !== null ? `${patientAge} anos` : "",
+    genderLabel,
+    patientHeight !== null ? `${formatHeightCm(patientHeight)} cm` : "",
+    patientWeight !== null ? `${formatDecimalBR(patientWeight, 1)} kg` : "",
+  ].filter(Boolean);
+
+  card.innerHTML = `
+    <div id="resultContent">
+      <div class="result-header">
+        <p class="result-patient">${escapeHTML(patientName)}</p>
+        ${metaParts.length ? `<p class="result-meta">${escapeHTML(metaParts.join(" · "))}</p>` : ""}
+        <span class="eyebrow">Resultado</span>
+        <h1 style="font-size:26px;">Perfil alimentar</h1>
+        <p class="lead">Pontuação média (1–5) em cada dimensão avaliada.</p>
+      </div>
+      <div class="petal-wrap">${renderPetalSVG(scores)}</div>
+      <div class="domain-list">${domainRows}</div>
+      <div class="notice">
+        Isso não é um diagnóstico. Domínios com pontuação alta indicam padrões a conversar com um(a) profissional de saúde — não indicam, por si só, um transtorno alimentar.
+      </div>
+    </div>
+    <div class="btn-row spread">
+      <button class="btn secondary" id="restartBtn">Refazer</button>
+      <button class="btn" id="exportBtn">Exportar</button>
+    </div>
+  `;
+
+  document.getElementById("restartBtn").addEventListener("click", () => {
+    answers = {};
+    current = -1;
+    patientName = "";
+    patientAge = null;
+    patientGender = "";
+    patientHeight = null;
+    patientWeight = null;
+    renderIntro();
+  });
+
+  document.getElementById("exportBtn").addEventListener("click", exportResults);
+}
+
+async function exportResults(){
+  const exportBtn = document.getElementById("exportBtn");
+  const originalLabel = exportBtn.textContent;
+  exportBtn.disabled = true;
+  exportBtn.textContent = "Gerando imagem…";
+
+  try{
+    const target = document.getElementById("resultContent");
+    const canvas = await html2canvas(target, {
+      backgroundColor: "#FFFFFF",
+      scale: 2,
+      useCORS: true,
+    });
+    const dataUrl = canvas.toDataURL("image/png");
+
+    const today = new Date();
+    const dateStr = today.toISOString().slice(0, 10); // YYYY-MM-DD
+    const filename = `${sanitizeFilename(patientName)}_${dateStr}.png`;
+
+    const link = document.createElement("a");
+    link.href = dataUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }catch(err){
+    console.error("Falha ao exportar imagem:", err);
+    alert("Não foi possível gerar a imagem. Tente novamente.");
+  }finally{
+    exportBtn.disabled = false;
+    exportBtn.textContent = originalLabel;
+  }
+}
+
+
+function renderPetalSVG(scores){
+ 
+  const isMobile = window.innerWidth <= 480;
+
+    const cfg = isMobile
+    ? { size: 1450, maxR: 420, labelOffset: 25, fontSize: 32 }
+    : { size: 870,  maxR: 195, labelOffset: 25, fontSize: 24 };
+
+  const size = cfg.size, cx = size/2, cy = size/2, maxR = cfg.maxR;
+  const labelR = maxR + cfg.labelOffset; 
+  const keys = Object.keys(DOMAINS);
+  const n = keys.length;
+  const angleStep = (Math.PI * 2) / n;
+
+  const points = keys.map((key, i) => {
+    const angle = -Math.PI/2 + i * angleStep;
+    const r = (scores[key].avg / 5) * maxR;
+    const x = cx + r * Math.cos(angle);
+    const y = cy + r * Math.sin(angle);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+
+  const gridRings = [0.25, 0.5, 0.75, 1].map(f => {
+    const ringPoints = keys.map((_, i) => {
+      const angle = -Math.PI/2 + i * angleStep;
+      const x = cx + maxR * f * Math.cos(angle);
+      const y = cy + maxR * f * Math.sin(angle);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+    return `<polygon points="${ringPoints}" fill="none" stroke="#DEE4E0" stroke-width="1"/>`;
+  }).join("");
+
+  const axisLines = keys.map((_, i) => {
+    const angle = -Math.PI/2 + i * angleStep;
+    const x = cx + maxR * Math.cos(angle);
+    const y = cy + maxR * Math.sin(angle);
+    return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#DEE4E0" stroke-width="1"/>`;
+  }).join("");
+
+    const axisLabels = keys.map((key, i) => {
+    const angle = -Math.PI/2 + i * angleStep;
+    const x = cx + labelR * Math.cos(angle);
+    const y = cy + labelR * Math.sin(angle);
+    const cos = Math.cos(angle);
+    let anchor = "middle";
+    if (cos > 0.3) anchor = "start";
+    else if (cos < -0.3) anchor = "end";
+    return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="${anchor}" dominant-baseline="middle" font-family="Inter, sans-serif" font-size="${cfg.fontSize}" font-weight="700" fill="${DOMAINS[key].color}">${DOMAINS[key].label}</text>`;
+  }).join("");
+
+  return `
+    <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" role="img" aria-label="Gráfico do perfil alimentar">
+      ${gridRings}
+      ${axisLines}
+      <polygon points="${points}" fill="#0072B2" fill-opacity="0.16" stroke="#0072B2" stroke-width="2.5"/>
+      ${axisLabels}
+    </svg>
+  `;
+}
+
+renderIntro();
+</script>
+</body>
+</html>
