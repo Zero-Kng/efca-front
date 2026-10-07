@@ -6,11 +6,12 @@ Aplicação de arquivo único: todo o HTML, CSS e JavaScript vivem em `index.htm
 
 ## Fluxo
 
-1. **Abertura.** Apresentação do instrumento.
-2. **Identificação.** Nome e idade do respondente.
-3. **Dados complementares.** Gênero, altura e peso, com aceitação de vírgula decimal no formato brasileiro.
-4. **Questionário.** Os 16 itens, um por tela, em escala Likert de 1 a 5, com barra de progresso e navegação para trás sem perder as respostas já marcadas.
-5. **Resultado.** Gráfico radar com os cinco domínios, valores por domínio e botão de exportação em PNG.
+1. **Abertura.** Apresentação do instrumento e da sua origem.
+2. **Consentimento.** Explica o que é coletado, para quê, onde fica, por quanto tempo e quem recebe o quê. O avanço exige duas confirmações explícitas: a pessoa avaliada tem 18 anos ou mais, e há consentimento para o uso dos dados.
+3. **Identificação.** Nome e idade do respondente. Idade abaixo de 18 anos bloqueia o fluxo.
+4. **Dados complementares.** Gênero, altura e peso, todos opcionais, com aceitação de vírgula decimal no formato brasileiro.
+5. **Questionário.** Os 16 itens, um por tela, em escala Likert de 1 a 5, com barra de progresso e navegação para trás sem perder as respostas já marcadas.
+6. **Resultado.** Gráfico radar com os cinco domínios, valores por domínio e botão de exportação em PNG.
 
 As perguntas não estão escritas no front-end. Elas vêm de `GET /api/questions`, de modo que alterar o instrumento na API atualiza a interface sem tocar neste repositório.
 
@@ -40,7 +41,14 @@ A porta 5500 não é arbitrária: é uma das origens que a `efca-api` libera por
 
 Para apontar para uma API local, altere `API_BASE_URL` para `http://localhost:8080`.
 
-## Tratamento de dados
+## Tratamento de dados e LGPD
+
+Peso, altura e respostas sobre comportamento alimentar são dados referentes à saúde, que a LGPD (art. 5º, II) classifica como dados pessoais sensíveis. O tratamento se apoia no consentimento do titular (art. 11, I), coletado de forma específica e destacada antes de qualquer campo ser exibido.
+
+- **Necessidade.** Só nome e idade são obrigatórios. Gênero, altura e peso não entram no cálculo e por isso são opcionais.
+- **Público.** A EFCA foi validada em adultos (Anger, Formoso e Katz, 2022). O fluxo exige confirmação de maioridade e recusa idade abaixo de 18 anos, o que também evita o regime de dado de criança e adolescente do art. 14.
+- **Revogação.** Como nada é persistido, fechar a página ou clicar em Refazer descarta tudo e zera o consentimento.
+
 
 Nome, idade, gênero, altura e peso são coletados apenas para compor o cabeçalho do relatório. **Nenhum desses campos é enviado para a API.** O corpo do `POST /api/responses` contém somente o mapa de respostas:
 
@@ -51,6 +59,10 @@ Nome, idade, gênero, altura e peso são coletados apenas para compor o cabeçal
 Os dados de identificação existem apenas em variáveis na memória da aba. Não há `localStorage`, `sessionStorage`, cookie ou envio a terceiros. Fechar ou recarregar a página descarta tudo, e o botão de refazer limpa explicitamente os campos.
 
 A exportação em PNG é gerada no próprio navegador e baixada direto para o disco. A imagem nunca passa por servidor.
+
+## Segurança
+
+- A biblioteca html2canvas é carregada do cdnjs com hash SRI (`integrity`) e `crossorigin`, de modo que o navegador recusa o script se o conteúdo servido pela CDN for alterado.
 
 ## Acessibilidade
 
@@ -72,11 +84,10 @@ A exportação em PNG é gerada no próprio navegador e baixada direto para o di
 
 ## Limitações conhecidas
 
-- **A biblioteca html2canvas é carregada de CDN sem verificação de integridade.** A tag `<script>` não usa os atributos `integrity` e `crossorigin`, então o navegador executa o que a CDN devolver, sem conferir se o conteúdo mudou. Como a página contém dados de identificação do respondente, essa é a lacuna de segurança mais relevante do projeto. As correções possíveis são adicionar o hash SRI ou hospedar a biblioteca junto do projeto.
 - Não há persistência: sair da página no meio do questionário perde o progresso.
 - A interface está fixada em tema claro via `color-scheme: light` e não acompanha a preferência do sistema.
-- Não há testes automatizados.
-- A falha na exportação de imagem é comunicada por `alert`, destoando do tratamento de erro do resto da interface, que usa mensagens na própria tela.
+- Não há testes automatizados no repositório.
+- O consentimento não gera registro, porque não existe servidor que guarde dado de identificação. Se o projeto passar a persistir qualquer coisa, será preciso registrar quando e com qual versão do texto o consentimento foi dado.
 
 ## Aviso
 

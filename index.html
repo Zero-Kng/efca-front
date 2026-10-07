@@ -154,6 +154,20 @@
   .domain-bar-fill{ height:100%; background:var(--teal); border-radius:8px; }
   .domain-score{ font-family:var(--mono); font-size:12.5px; width:44px; text-align:right; color:var(--ink); }
 
+  .consent-list{
+    margin:0 0 6px 0; padding-left:18px; font-size:14px; line-height:1.6; color:var(--ink-soft);
+  }
+  .consent-list li{ margin-bottom:8px; }
+  .consent-list strong{ color:var(--ink); }
+  .check-option{
+    display:flex; align-items:flex-start; gap:12px; margin-top:14px;
+    padding:13px 16px; border:1px solid var(--line); border-radius:10px;
+    cursor:pointer; font-size:14.5px; line-height:1.45;
+  }
+  .check-option:hover{ border-color:var(--teal); background:#F7FAF9; }
+  .check-option input{ accent-color:var(--teal); width:17px; height:17px; flex-shrink:0; margin-top:2px; }
+  .optional-tag{ text-transform:none; letter-spacing:0; color:var(--ink-soft); opacity:.8; }
+
   .sr-only{
     position:absolute; width:1px; height:1px; padding:0; margin:-1px;
     overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
@@ -181,7 +195,7 @@
 
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 
 const API_BASE_URL = "https://efca-api.onrender.com";
@@ -203,8 +217,11 @@ const LIKERT_LABELS = [
   "Sempre",
 ];
 
+const MIN_AGE = 18;
+
 let current = -1; 
 let answers = {}; 
+let consentGiven = false;
 let patientName = ""; // NUNCA enviar isso para a API — uso 100% local no navegador
 let patientAge = null;    // anos (número) — local apenas
 let patientGender = "";   // "M" ou "F" — local apenas
@@ -240,13 +257,61 @@ function renderIntro(){
     <p class="lead">Este questionário reúne afirmações sobre como você se relaciona com a comida. Não existem respostas certas ou erradas — responda pensando no seu padrão habitual, não em um dia específico.</p>
     <p class="lead">Leva cerca de 3 minutos.</p>
     <div class="notice">
-      Este questionário é uma ferramenta de triagem comportamental, não um diagnóstico. Ele não substitui avaliação de um(a) nutricionista, endocrinologista ou psicólogo(a). Os itens exibidos aqui são um protótipo de exemplo — antes de usar com pacientes reais, substitua pelo texto oficial e licenciado da escala validada.
+      Este questionário é uma ferramenta de triagem comportamental, não um diagnóstico. Ele não substitui avaliação de um(a) nutricionista, endocrinologista ou psicólogo(a).<br><br>
+      Baseado na EFCA de Anger, Formoso e Katz (Nutrición Hospitalaria, 2022), validada originalmente em espanhol com adultos. Esta versão em português é um projeto acadêmico e não tem validação psicométrica própria.
     </div>
     <div class="btn-row">
       <button class="btn" id="startBtn">Começar</button>
     </div>
   `;
-  document.getElementById("startBtn").addEventListener("click", renderPatientName);
+  document.getElementById("startBtn").addEventListener("click", renderConsent);
+}
+
+function renderConsent(){
+  progressRow.style.display = "none";
+  card.innerHTML = `
+    <span class="eyebrow">EFCA · Privacidade</span>
+    <h1 style="font-size:26px;">Antes de começar</h1>
+    <p class="lead">Peso, altura e respostas sobre comportamento alimentar são dados de saúde, que a LGPD classifica como dados pessoais sensíveis. Por isso pedimos seu consentimento específico.</p>
+    <ul class="consent-list">
+      <li><strong>O que é coletado:</strong> nome e idade, e opcionalmente gênero, altura e peso, além das 16 respostas.</li>
+      <li><strong>Para quê:</strong> somente para exibir o resultado nesta tela e gerar a imagem do relatório.</li>
+      <li><strong>Onde fica:</strong> nome, idade, gênero, altura e peso ficam apenas na memória desta aba. Só as 16 respostas, sem nenhuma identificação, são enviadas à API, que calcula a pontuação e não grava nada.</li>
+      <li><strong>Por quanto tempo:</strong> até você fechar ou recarregar a página, ou clicar em Refazer. Nada é salvo no navegador nem em servidor.</li>
+      <li><strong>Terceiros:</strong> a página (GitHub Pages), a API (Render) e a biblioteca de exportação (cdnjs) recebem o endereço IP das requisições, como em qualquer site. Nenhum deles recebe seus dados de identificação.</li>
+      <li><strong>Seus direitos:</strong> você pode desistir a qualquer momento fechando a página, e nada do que foi preenchido permanece.</li>
+    </ul>
+    <label class="check-option">
+      <input type="checkbox" id="ageCheck" ${consentGiven ? "checked" : ""}>
+      <span>A pessoa avaliada tem ${MIN_AGE} anos ou mais.</span>
+    </label>
+    <label class="check-option">
+      <input type="checkbox" id="consentCheck" ${consentGiven ? "checked" : ""}>
+      <span>Sou a pessoa avaliada, ou tenho autorização dela, e consinto com o uso desses dados para gerar o resultado.</span>
+    </label>
+    <div class="btn-row">
+      <button class="btn secondary" id="backToStartBtn">Voltar</button>
+      <button class="btn" id="consentBtn" ${consentGiven ? "" : "disabled"}>Concordo e quero continuar</button>
+    </div>
+  `;
+
+  const ageCheck = document.getElementById("ageCheck");
+  const consentCheck = document.getElementById("consentCheck");
+  const consentBtn = document.getElementById("consentBtn");
+
+  function sync(){
+    consentGiven = ageCheck.checked && consentCheck.checked;
+    consentBtn.disabled = !consentGiven;
+  }
+  ageCheck.addEventListener("change", sync);
+  consentCheck.addEventListener("change", sync);
+  ageCheck.focus();
+
+  document.getElementById("backToStartBtn").addEventListener("click", renderIntro);
+  consentBtn.addEventListener("click", () => {
+    if (!consentGiven) return;
+    renderPatientName();
+  });
 }
 
 function sanitizeFilename(name){
@@ -272,6 +337,7 @@ function formatHeightCm(num){
 }
 
 function renderPatientName(){
+  if (!consentGiven) { renderConsent(); return; }
   progressRow.style.display = "none";
   const ageStr = patientAge !== null ? String(patientAge) : "";
   card.innerHTML = `
@@ -298,7 +364,7 @@ function renderPatientName(){
   const errorEl = document.getElementById("patientNameError");
   input.focus();
 
-  document.getElementById("backToIntroBtn").addEventListener("click", renderIntro);
+  document.getElementById("backToIntroBtn").addEventListener("click", renderConsent);
 
   function tryContinue(){
     const value = input.value.trim();
@@ -309,8 +375,13 @@ function renderPatientName(){
       input.focus();
       return;
     }
-    if (!Number.isFinite(ageVal) || ageVal < 1 || ageVal > 120){
-      errorEl.textContent = "Informe uma idade válida (1–120).";
+    if (!Number.isFinite(ageVal) || ageVal > 120){
+      errorEl.textContent = "Informe uma idade válida.";
+      ageInput.focus();
+      return;
+    }
+    if (ageVal < MIN_AGE){
+      errorEl.textContent = `A EFCA foi validada apenas em adultos. Este questionário não deve ser aplicado a menores de ${MIN_AGE} anos.`;
       ageInput.focus();
       return;
     }
@@ -333,10 +404,10 @@ function renderPatientDetails(){
   card.innerHTML = `
     <span class="eyebrow">EFCA · Autoavaliação</span>
     <h1 style="font-size:26px;">Dados do(a) paciente</h1>
-    <p class="lead">Também usados apenas para o resultado exportado. Não são enviados a nenhum servidor.</p>
+    <p class="lead">Todos opcionais. Servem apenas para o cabeçalho do resultado exportado e não são enviados a nenhum servidor.</p>
 
     <div class="field-group">
-      <span class="field-label">Gênero</span>
+      <span class="field-label">Gênero <span class="optional-tag">(opcional)</span></span>
       <div class="gender-group" role="radiogroup" aria-label="Gênero">
         <label class="gender-option${patientGender === "M" ? " selected" : ""}">
           <input type="radio" name="gender" value="M" ${patientGender === "M" ? "checked" : ""}>
@@ -346,16 +417,20 @@ function renderPatientDetails(){
           <input type="radio" name="gender" value="F" ${patientGender === "F" ? "checked" : ""}>
           <span>Feminino</span>
         </label>
+        <label class="gender-option${patientGender === "" ? " selected" : ""}">
+          <input type="radio" name="gender" value="" ${patientGender === "" ? "checked" : ""}>
+          <span>Não informar</span>
+        </label>
       </div>
     </div>
 
     <div class="field-group">
-      <span class="field-label">Altura (cm)</span>
+      <span class="field-label">Altura (cm) <span class="optional-tag">(opcional)</span></span>
       <input type="text" inputmode="decimal" class="text-input" id="heightInput" placeholder="Ex: 175" value="${escapeHTML(heightStr)}" maxlength="5">
     </div>
 
     <div class="field-group">
-      <span class="field-label">Peso (kg)</span>
+      <span class="field-label">Peso (kg) <span class="optional-tag">(opcional)</span></span>
       <input type="text" inputmode="decimal" class="text-input" id="weightInput" placeholder="Ex: 72,5" value="${escapeHTML(weightStr)}" maxlength="6">
     </div>
 
@@ -372,31 +447,31 @@ function renderPatientDetails(){
   card.querySelectorAll('input[name="gender"]').forEach(input => {
     input.addEventListener("change", (e) => {
       patientGender = e.target.value;
-      renderPatientDetails();
+      card.querySelectorAll(".gender-option").forEach(opt => {
+        opt.classList.toggle("selected", opt.contains(e.target));
+      });
     });
   });
 
   const errorEl = document.getElementById("detailsError");
 
   document.getElementById("detailsContinueBtn").addEventListener("click", () => {
-    const heightVal = parseDecimalBR(document.getElementById("heightInput").value);
-    const weightVal = parseDecimalBR(document.getElementById("weightInput").value);
+    const heightRaw = document.getElementById("heightInput").value.trim();
+    const weightRaw = document.getElementById("weightInput").value.trim();
+    const heightVal = parseDecimalBR(heightRaw);
+    const weightVal = parseDecimalBR(weightRaw);
 
-    if (!patientGender){
-      errorEl.textContent = "Selecione o gênero para continuar.";
+    if (heightRaw && (!Number.isFinite(heightVal) || heightVal < 50 || heightVal > 250)){
+      errorEl.textContent = "Informe uma altura válida em centímetros (ex: 175) ou deixe em branco.";
       return;
     }
-    if (!Number.isFinite(heightVal) || heightVal < 50 || heightVal > 250){
-      errorEl.textContent = "Informe uma altura válida em centímetros (ex: 175).";
-      return;
-    }
-    if (!Number.isFinite(weightVal) || weightVal < 20 || weightVal > 400){
-      errorEl.textContent = "Informe um peso válido em kg (ex: 72,5).";
+    if (weightRaw && (!Number.isFinite(weightVal) || weightVal < 20 || weightVal > 400)){
+      errorEl.textContent = "Informe um peso válido em kg (ex: 72,5) ou deixe em branco.";
       return;
     }
 
-    patientHeight = heightVal;
-    patientWeight = weightVal;
+    patientHeight = heightRaw ? heightVal : null;
+    patientWeight = weightRaw ? weightVal : null;
     startQuiz();
   });
 }
@@ -506,7 +581,7 @@ async function renderResults(){
     const pct = Math.round((d.average / 5) * 100);
     return `
       <div class="domain-row">
-        <span class="domain-name">${d.domainLabel}</span>
+        <span class="domain-name">${escapeHTML(d.domainLabel)}</span>
         <div class="domain-bar-track">
           <div class="domain-bar-fill" style="width:${pct}%; background:${meta.color};"></div>
         </div>
@@ -534,6 +609,7 @@ async function renderResults(){
       </div>
       <div class="petal-wrap">${renderPetalSVG(scores)}</div>
       <div class="domain-list">${domainRows}</div>
+      <div class="field-error" id="exportError" role="alert"></div>
       <div class="notice">
         Isso não é um diagnóstico. Domínios com pontuação alta indicam padrões a conversar com um(a) profissional de saúde — não indicam, por si só, um transtorno alimentar.
       </div>
@@ -547,6 +623,7 @@ async function renderResults(){
   document.getElementById("restartBtn").addEventListener("click", () => {
     answers = {};
     current = -1;
+    consentGiven = false;
     patientName = "";
     patientAge = null;
     patientGender = "";
@@ -560,6 +637,8 @@ async function renderResults(){
 
 async function exportResults(){
   const exportBtn = document.getElementById("exportBtn");
+  const exportError = document.getElementById("exportError");
+  exportError.textContent = "";
   const originalLabel = exportBtn.textContent;
   exportBtn.disabled = true;
   exportBtn.textContent = "Gerando imagem…";
@@ -585,7 +664,7 @@ async function exportResults(){
     document.body.removeChild(link);
   }catch(err){
     console.error("Falha ao exportar imagem:", err);
-    alert("Não foi possível gerar a imagem. Tente novamente.");
+    exportError.textContent = "Não foi possível gerar a imagem. Tente novamente.";
   }finally{
     exportBtn.disabled = false;
     exportBtn.textContent = originalLabel;
